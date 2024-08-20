@@ -19,7 +19,7 @@ def login(session: requests.Session, payload: dict):
     p = session.post(URL, data=payload)
 
     if "loggedin" in p.text:
-        logger.info("Successfully logged in")
+        logger.success("Successfully logged in")
         return True
     else:
         logger.error("Failed to login")

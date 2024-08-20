@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
+from tqdm import tqdm
 
 def get_list_of_events(session: requests.Session):
     logger.info("Getting list of events")
@@ -20,7 +21,7 @@ def get_list_of_events(session: requests.Session):
 
         rows = table.find_all("tr")
 
-        for row in rows:
+        for row in tqdm(rows):
             if "data-key" in row.attrs:
                 data_key = row["data-key"]
                 event_type = row.select_one("td:nth-of-type(1) a")
@@ -58,7 +59,6 @@ def get_list_of_events(session: requests.Session):
 
 
 def lazy_load_event_details(session: requests.Session, event_id, event_type):
-    logger.info(f"Lazy loading event details for event ID: {event_id}")
     url = "https://player.plus/en-gb/events/ajaxgetparticipation"
     payload = {"eventid": event_id, "eventtype": event_type.lower()}
     req = session.post(url, data=payload)
