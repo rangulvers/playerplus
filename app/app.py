@@ -6,7 +6,6 @@ import stats
 import os
 from dotenv import load_dotenv
 
-
 def main():
     load_dotenv(dotenv_path=".env")
     
