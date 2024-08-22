@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
-from tqdm import tqdm
 import json
 
 def get_list_of_events(session: requests.Session):
@@ -19,7 +18,7 @@ def get_list_of_events(session: requests.Session):
 
         rows = table.find_all("tr")
 
-        for row in tqdm(rows):
+        for row in rows:
             event = parse_event_row(session, row)
             if event:
                 yield json.dumps(event) + "\n"
@@ -81,8 +80,7 @@ def lazy_load_event_details(session: requests.Session, event_id, event_type):
 
 def get_event_attendance(session: requests.Session, event_link, event_id, event_type):
     url = "https://player.plus" + event_link
-    req = session.get(url).text
-    html = BeautifulSoup(req, "html.parser")
+    html = fetch_page(session, url)
 
     modal_body = html.find("div", class_="modal-body")
     if not modal_body:
@@ -94,6 +92,10 @@ def get_event_attendance(session: requests.Session, event_link, event_id, event_
         logger.error("No modal body found in HTML code")
         return []
 
+    return parse_player_info(modal_content)
+
+
+def parse_player_info(modal_content: dict) -> list:
     html_content = modal_content.get("html", "")
     modal_content = BeautifulSoup(html_content, "html.parser")
     lists = modal_content.find_all("div", class_="participation-list")
@@ -101,8 +103,7 @@ def get_event_attendance(session: requests.Session, event_link, event_id, event_
     players = []
 
     for participation_list in lists:
-        header = participation_list.find("div", class_="participation-list-header").text
-        header = "".join(filter(lambda x: not x.isdigit(), header)).strip()
+        header = extract_participation_header(participation_list)
         list_of_players = participation_list.find_all("div", class_="participation-list-user-name")
         
         for player in list_of_players:
@@ -114,6 +115,11 @@ def get_event_attendance(session: requests.Session, event_link, event_id, event_
                 logger.error(f"Error: {e}")
 
     return players
+
+
+def extract_participation_header(participation_list: BeautifulSoup) -> str:
+    header = participation_list.find("div", class_="participation-list-header").text
+    return "".join(filter(lambda x: not x.isdigit(), header)).strip()
 
 
 if __name__ == "__main__":
