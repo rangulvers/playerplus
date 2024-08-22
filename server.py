@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 import uvicorn
 import requests
 
@@ -21,7 +22,7 @@ def get_login():
 @app.get("/events")
 def get_events():
     all_events = events.get_list_of_events(session)
-    return all_events
+    return StreamingResponse(all_events, media_type="application/json") 
 
 @app.get("/polls")
 def get_polls():
