@@ -4,10 +4,14 @@ import uvicorn
 import requests
 
 from api import auth, events
+from middelware.authentication import LoginMiddleware
+from middelware.logging import LoggingMiddleware
 
 app = FastAPI()
 
 session = requests.Session()
+app.add_middleware(LoginMiddleware, session=session)
+app.add_middleware(LoggingMiddleware)
 
 @app.get("/")
 def read_root():
@@ -17,12 +21,11 @@ def read_root():
 def get_login():
     csrf_token = auth.get_csrf_token(session=session)
     return auth.login(session=session, csrf_token=csrf_token)
-    
 
 @app.get("/events")
 def get_events():
     all_events = events.get_list_of_events(session)
-    return StreamingResponse(all_events, media_type="application/json") 
+    return StreamingResponse(all_events, media_type="application/json")
 
 @app.get("/polls")
 def get_polls():
