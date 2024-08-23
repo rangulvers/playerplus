@@ -1,7 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
-import json
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class Player(BaseModel):
+    name: str
+    state: str
+
+class Event(BaseModel):
+    id: str
+    type: str
+    date: str
+    link: str
+    players: List[Player]
 
 def get_list_of_events(session: requests.Session):
     logger.info("Getting list of events")
@@ -21,7 +33,7 @@ def get_list_of_events(session: requests.Session):
         for row in rows:
             event = parse_event_row(session, row)
             if event:
-                yield json.dumps(event) + "\n"
+                yield event.json()
 
         if not has_next_page(html):
             logger.info("No more pages found.")
@@ -36,7 +48,7 @@ def fetch_page(session: requests.Session, url: str) -> BeautifulSoup:
     return BeautifulSoup(req, "html.parser")
 
 
-def parse_event_row(session: requests.Session, row: BeautifulSoup) -> dict:
+def parse_event_row(session: requests.Session, row: BeautifulSoup) -> Optional[Event]:
     if "data-key" not in row.attrs:
         logger.error("Warning: 'data-key' attribute missing in row")
         return None
@@ -53,20 +65,19 @@ def parse_event_row(session: requests.Session, row: BeautifulSoup) -> dict:
     event_id = data_key.split("_")[1]
     player_info = get_event_attendance(session, show_link, event_id, event_type)
 
-    return {
-        "id": data_key,
-        "type": event_type,
-        "date": event_date,
-        "link": show_link,
-        "players": player_info,
-    }
+    return Event(
+        id=data_key,
+        type=event_type,
+        date=event_date,
+        link=show_link,
+        players=player_info,
+    )
 
 
 def has_next_page(html: BeautifulSoup) -> bool:
     pagination = html.find("ul", class_="pagination")
     next_button = pagination.find("li", class_="next") if pagination else None
     return bool(next_button and next_button.find("a"))
-
 
 
 def lazy_load_event_details(session: requests.Session, event_id, event_type):
@@ -95,7 +106,7 @@ def get_event_attendance(session: requests.Session, event_link, event_id, event_
     return parse_player_info(modal_content)
 
 
-def parse_player_info(modal_content: dict) -> list:
+def parse_player_info(modal_content: dict) -> List[Player]:
     html_content = modal_content.get("html", "")
     modal_content = BeautifulSoup(html_content, "html.parser")
     lists = modal_content.find_all("div", class_="participation-list")
@@ -109,7 +120,7 @@ def parse_player_info(modal_content: dict) -> list:
         for player in list_of_players:
             try:
                 name = player.text.strip()
-                player = {"name": name, "state": header}
+                player = Player(name=name, state=header)
                 players.append(player)
             except Exception as e:
                 logger.error(f"Error: {e}")
