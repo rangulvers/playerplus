@@ -4,6 +4,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from api.auth import login, get_csrf_token
 import requests
 
+
 class LoginMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, session: requests.Session):
         super().__init__(app)

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 import uvicorn
 import requests
+from typing import Optional
 
 from api import auth, events
 from middelware.authentication import LoginMiddleware
@@ -15,7 +16,7 @@ app.add_middleware(LoggingMiddleware, session=session)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"message": "Welcome to the PlayerPlus API!"}
 
 @app.get("/login")
 def get_login():
@@ -23,8 +24,9 @@ def get_login():
     return auth.login(session=session, csrf_token=csrf_token)
 
 @app.get("/events")
-def get_events():
-    all_events = events.get_list_of_events(session)
+@app.get("/events/{event_type}")
+def get_events(event_type: Optional[str] = None):
+    all_events = events.get_list_of_events(session, event_type)
     return StreamingResponse(all_events, media_type="application/json")
 
 @app.get("/polls")

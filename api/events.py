@@ -15,7 +15,7 @@ class Event(BaseModel):
     link: str
     players: List[Player]
 
-def get_list_of_events(session: requests.Session):
+def get_list_of_events(session: requests.Session, event_type: str):
     logger.info("Getting list of events")
     page_number = 1
 
@@ -33,7 +33,10 @@ def get_list_of_events(session: requests.Session):
         for row in rows:
             event = parse_event_row(session, row)
             if event:
-                yield event.json()
+                if event_type and event.type.lower() == event_type:
+                    yield event.json()
+                elif not event_type:
+                    yield event.json()
 
         if not has_next_page(html):
             logger.info("No more pages found.")
