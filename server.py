@@ -11,7 +11,7 @@ app = FastAPI()
 
 session = requests.Session()
 app.add_middleware(LoginMiddleware, session=session)
-app.add_middleware(LoggingMiddleware)
+app.add_middleware(LoggingMiddleware, session=session)
 
 @app.get("/")
 def read_root():
